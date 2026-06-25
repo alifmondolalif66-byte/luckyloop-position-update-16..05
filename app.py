@@ -294,6 +294,32 @@ def save_job():
 
 
 # ══════════════════════════════════════════════════════════
+#  LINK → CAMPAIGN CHECKER
+# ══════════════════════════════════════════════════════════
+
+@app.route("/api/check-link", methods=["GET"])
+def check_link():
+    url = request.args.get("url", "").strip()
+    if not url:
+        return jsonify({"found": False, "campaign": None})
+
+    # Extract task ID from URL end (e.g. "f8c620cdb682_HG")
+    task_id = url.rstrip("/").split("/")[-1]
+
+    conn = get_db()
+    rows = conn.execute("SELECT job_name, link FROM jobs").fetchall()
+    conn.close()
+
+    for row in rows:
+        db_link    = (row["link"] or "").rstrip("/")
+        db_task_id = db_link.split("/")[-1]
+        if db_task_id and db_task_id == task_id:
+            return jsonify({"found": True, "campaign": row["job_name"]})
+
+    return jsonify({"found": False, "campaign": None})
+
+
+# ══════════════════════════════════════════════════════════
 #  DEVICE MANAGEMENT
 # ══════════════════════════════════════════════════════════
 
@@ -580,7 +606,7 @@ def admin_delete_license():
 
 
 # ══════════════════════════════════════════════════════════
-#  ✅ NEW: RESTORE ENDPOINT (localStorage backup → server)
+#  RESTORE ENDPOINT (localStorage backup → server)
 # ══════════════════════════════════════════════════════════
 
 @app.route("/api/admin/licenses/restore", methods=["POST"])
